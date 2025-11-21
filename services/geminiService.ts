@@ -33,3 +33,32 @@ export const generateBannerImage = async (
     throw new Error(error.message || "Failed to generate image");
   }
 };
+
+export const getPythonCode = (prompt: string, aspectRatio: string): string => {
+  // Escape quotes in prompt for Python string
+  const safePrompt = prompt.replace(/"/g, '\\"').replace(/\n/g, ' ');
+  
+  return `from google import genai
+from google.genai import types
+import base64
+
+client = genai.Client(api_key="YOUR_API_KEY")
+
+# Generate the ad background
+response = client.models.generate_images(
+    model='imagen-4.0-generate-001',
+    prompt='${safePrompt}',
+    config=types.GenerateImagesConfig(
+        number_of_images=1,
+        aspect_ratio='${aspectRatio}',
+        output_mime_type='image/jpeg',
+    )
+)
+
+for generated_image in response.generated_images:
+    image = generated_image.image
+    # Save the image
+    with open("ad_background.jpeg", "wb") as f:
+        f.write(image.image_bytes)
+        print("Image saved to ad_background.jpeg")`;
+};

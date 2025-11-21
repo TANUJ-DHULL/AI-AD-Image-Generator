@@ -1,7 +1,8 @@
 import React, { useRef, useState } from 'react';
 import { AdConfig, AspectRatio } from '../types';
-import { Download, Share2, Move, Trash2 } from 'lucide-react';
+import { Download, Share2, Move, Trash2, Code, X, Copy, Check } from 'lucide-react';
 import html2canvas from 'html2canvas';
+import { getPythonCode } from '../services/geminiService';
 
 interface AdPreviewProps {
   imageUrl: string;
@@ -12,6 +13,10 @@ interface AdPreviewProps {
 export const AdPreview: React.FC<AdPreviewProps> = ({ imageUrl, config, onDelete }) => {
   const adRef = useRef<HTMLDivElement>(null);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [showCode, setShowCode] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const codeSnippet = getPythonCode(config.description, config.aspectRatio);
 
   // Calculate container aspect ratio styles
   const getAspectRatioStyle = (ratio: AspectRatio) => {
@@ -46,9 +51,52 @@ export const AdPreview: React.FC<AdPreviewProps> = ({ imageUrl, config, onDelete
     }
   };
 
+  const handleCopyCode = () => {
+    navigator.clipboard.writeText(codeSnippet);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   return (
     <div className="group relative bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+      {/* Code Overlay */}
+      {showCode && (
+        <div className="absolute inset-0 z-30 bg-slate-900/95 p-4 flex flex-col text-left backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="flex justify-between items-center mb-3">
+            <div className="flex items-center gap-2">
+              <span className="text-indigo-400 text-xs font-bold tracking-wider font-mono">PYTHON SDK</span>
+            </div>
+            <div className="flex gap-1">
+              <button 
+                onClick={handleCopyCode}
+                className="p-1.5 text-slate-400 hover:text-white hover:bg-white/10 rounded transition-colors"
+                title="Copy Code"
+              >
+                {copied ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
+              </button>
+              <button 
+                onClick={() => setShowCode(false)} 
+                className="p-1.5 text-slate-400 hover:text-white hover:bg-white/10 rounded transition-colors"
+                title="Close"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+          <pre className="flex-1 overflow-auto text-[10px] sm:text-xs font-mono text-indigo-200 p-3 bg-black/30 rounded-lg border border-white/5 whitespace-pre-wrap leading-relaxed">
+            {codeSnippet}
+          </pre>
+        </div>
+      )}
+
       <div className="absolute top-3 right-3 z-20 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+         <button 
+            onClick={() => setShowCode(true)}
+            className="p-2 bg-white/90 backdrop-blur rounded-full text-slate-700 hover:text-indigo-600 shadow-sm border border-slate-100"
+            title="View Python Code"
+          >
+            <Code className="w-4 h-4" />
+          </button>
          {onDelete && (
           <button 
             onClick={onDelete}
@@ -113,7 +161,7 @@ export const AdPreview: React.FC<AdPreviewProps> = ({ imageUrl, config, onDelete
       
       <div className="p-3 bg-slate-50 border-t border-slate-100 flex justify-between items-center text-xs text-slate-500">
         <span>{config.aspectRatio} • Generated with Imagen 4.0</span>
-        <span className="font-mono">PRO</span>
+        <span className="font-mono text-[10px] bg-slate-200 px-1.5 py-0.5 rounded text-slate-600">PRO</span>
       </div>
     </div>
   );
